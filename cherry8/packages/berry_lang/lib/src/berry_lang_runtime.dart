@@ -215,6 +215,22 @@ class ProgramExpression {
   }
 }
 
+/// {@template goto_statement}
+/// A Statement that will change the program counter to a specific line.
+/// {@endtemplate}
+class GotoStatement extends ProgramStatement {
+  /// {@macro goto_statement}
+  GotoStatement(this.targetLine);
+
+  /// {@macro goto_statement}
+  final int targetLine;
+
+  @override
+  int? execute(BerryLangRuntime runtime) {
+    return targetLine;
+  }
+}
+
 /// {@template let_statement}
 /// A Statement that will assign a value to a variable in the runtime.
 /// {@endtemplate}
@@ -284,6 +300,19 @@ class ProgramLine {
     late ProgramStatement statement;
     if (statementStr == 'LET') {
       statement = LetStatement.fromTokens(rest);
+    } else if (statementStr == 'GOTO') {
+      if (rest.isEmpty) {
+        throw const UnexpectedTokenException(
+          'GOTO requires a target line number',
+        );
+      }
+      final targetLine = int.tryParse(rest.first);
+      if (targetLine == null) {
+        throw UnexpectedTokenException(
+          'Invalid target line number: ${rest.first} at line $line',
+        );
+      }
+      statement = GotoStatement(targetLine);
     } else {
       throw UnexpectedTokenException(
         'Unknow command: $statementStr at line $line',

@@ -98,6 +98,47 @@ void main() {
           expect(berryRuntime.getVariable('B'), equals(10));
           expect(berryRuntime.getVariable('C'), equals(25));
         });
+
+        test('variables are 0 bt default', () async {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 LET A = B + 1''');
+
+          await berryRuntime.runProgram();
+
+          expect(berryRuntime.getVariable('A'), equals(1));
+        });
+      });
+
+      group('GOTO statements', () {
+        test('is correctly parsed', () {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 GOTO 20''');
+          final line = berryRuntime.getLine(10);
+          expect(line, isNotNull);
+          expect(line!.number, equals(10));
+          final statement = line.statement;
+          expect(
+            statement,
+            isA<GotoStatement>().having(
+              (s) => s.targetLine,
+              'targetLine',
+              equals(20),
+            ),
+          );
+        });
+
+        test('jumpts to the target line', () async {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 LET A = 30
+20 GOTO 40
+30 LET A = 10
+40 LET A = A + 20''');
+
+          await berryRuntime.runProgram();
+
+          // If goto worked, A should be 50 (30 + 20) instead of 30
+          expect(berryRuntime.getVariable('A'), equals(50));
+        });
       });
     });
   });
