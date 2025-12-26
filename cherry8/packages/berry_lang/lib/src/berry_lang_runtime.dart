@@ -27,6 +27,13 @@ const _validVariableNames = [
   'Z',
 ];
 
+const _validOperators = [
+  '+',
+  '-',
+  '*',
+  '/',
+];
+
 /// {@template unexpected_token_exception}
 /// Exception thrown when an incorrect token was found while parsing a token
 /// in a berry program.
@@ -58,6 +65,47 @@ abstract class ProgramStatement {
 abstract class ProgramExpressionMember {
   /// Evaluates the member and returns its integer value.
   int evaluate(BerryLangRuntime runtime);
+}
+
+/// {@template operation_expression_member}
+/// A member of a Berry program expression that represents an operation
+/// between two other expression members.
+/// {@endtemplate}
+class OperationExpressionMember extends ProgramExpressionMember {
+  /// {@macro operation_expression_member}
+  OperationExpressionMember({
+    required this.operator,
+    required this.left,
+    required this.right,
+  });
+
+  /// Operator
+  final String operator;
+
+  /// Left operand
+  final ProgramExpressionMember left;
+
+  /// Right operand
+  final ProgramExpressionMember right;
+
+  @override
+  int evaluate(BerryLangRuntime runtime) {
+    final leftValue = left.evaluate(runtime);
+    final rightValue = right.evaluate(runtime);
+
+    switch (operator) {
+      case '+':
+        return leftValue + rightValue;
+      case '-':
+        return leftValue - rightValue;
+      case '*':
+        return leftValue * rightValue;
+      case '/':
+        return leftValue ~/ rightValue;
+      default:
+        throw UnexpectedTokenException('Invalid operator: $operator');
+    }
+  }
 }
 
 /// {@template literal_expression_member}
@@ -100,15 +148,53 @@ class ProgramExpression {
 
   /// {@macro program_expression}
   factory ProgramExpression.fromTokens(List<String> tokens) {
-    final members = tokens.map((t) {
-      if (_validVariableNames.contains(t)) {
-        return VariableExpressionMember(t);
-      } else if (int.tryParse(t) != null) {
-        return LiteralExpressionMember(int.parse(t));
+    final members = <ProgramExpressionMember>[];
+
+    final rawTokens = List<String>.from(tokens);
+
+    ProgramExpressionMember? parseBasicMember(String token) {
+      if (_validVariableNames.contains(token)) {
+        return VariableExpressionMember(token);
+      } else if (int.tryParse(token) != null) {
+        return LiteralExpressionMember(int.parse(token));
+      } else {
+        return null;
+      }
+    }
+
+    while (rawTokens.isNotEmpty) {
+      final t = rawTokens.removeAt(0);
+
+      final basicMember = parseBasicMember(t);
+      if (basicMember != null) {
+        members.add(basicMember);
+      } else if (_validOperators.contains(t)) {
+        if (members.isEmpty) {
+          throw UnexpectedTokenException('Operator $t has no left operand');
+        }
+
+        final left = members.removeLast();
+        if (rawTokens.isEmpty) {
+          throw UnexpectedTokenException('Operator $t has no right operand');
+        }
+
+        final rightToken = rawTokens.removeAt(0);
+        final right = parseBasicMember(rightToken);
+        if (right == null) {
+          throw UnexpectedTokenException('Invalid right operand: $rightToken');
+        }
+
+        members.add(
+          OperationExpressionMember(
+            operator: t,
+            left: left,
+            right: right,
+          ),
+        );
       } else {
         throw UnexpectedTokenException('Invalid expression token: $t');
       }
-    });
+    }
 
     return ProgramExpression(members.toList());
   }

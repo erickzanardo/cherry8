@@ -49,6 +49,55 @@ void main() {
           expect(berryRuntime.getVariable('A'), equals(10));
           expect(berryRuntime.getVariable('B'), equals(10));
         });
+
+        test('sets a value from an add operation', () async {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 LET A = 10 + 12''');
+
+          await berryRuntime.runProgram();
+
+          expect(berryRuntime.getVariable('A'), equals(22));
+        });
+
+        test('sets a value from a complex expression', () async {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 LET A = 10 + 2 + 3 + 5 + 1''');
+
+          await berryRuntime.runProgram();
+
+          expect(berryRuntime.getVariable('A'), equals(21));
+        });
+
+        test('sets a value from a subtract operation', () async {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 LET A = 20 - 5''');
+
+          await berryRuntime.runProgram();
+
+          expect(berryRuntime.getVariable('A'), equals(15));
+        });
+
+        test('sets a value from mixed operations', () async {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 LET A = 50 - 20 + 5 + 10 - 2''');
+
+          await berryRuntime.runProgram();
+
+          expect(berryRuntime.getVariable('A'), equals(43));
+        });
+
+        test('sets a value from an operation between variables', () async {
+          final berryRuntime = BerryLangRuntime()
+            ..loadProgram('''10 LET A = 30
+20 LET B = 10
+30 LET C = A - B + 5''');
+
+          await berryRuntime.runProgram();
+
+          expect(berryRuntime.getVariable('A'), equals(30));
+          expect(berryRuntime.getVariable('B'), equals(10));
+          expect(berryRuntime.getVariable('C'), equals(25));
+        });
       });
     });
   });
