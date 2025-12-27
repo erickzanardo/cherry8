@@ -235,5 +235,39 @@ void main() {
         });
       });
     });
+
+    group('custom statements', () {
+      test('can register a custom statement parser', () async {
+        final berryRuntime = BerryLangRuntime()
+          ..registerStatementParser('SUPER', _SuperValueStatement.fromTokens)
+          ..loadProgram('''10 SUPER A''');
+
+        await berryRuntime.runProgram();
+        expect(berryRuntime.getVariable('A'), equals(42));
+      });
+    });
   });
+}
+
+class _SuperValueStatement extends ProgramStatement {
+  _SuperValueStatement({
+    required this.targetVariable,
+  });
+
+  factory _SuperValueStatement.fromTokens(List<String> tokens) {
+    // Expected format: PI <variable>
+    if (tokens.length != 1) {
+      throw const UnexpectedTokenException('Invalid PI statement format');
+    }
+    final targetVariable = tokens[0];
+    return _SuperValueStatement(targetVariable: targetVariable);
+  }
+
+  final String targetVariable;
+
+  @override
+  int? execute(BerryLangRuntime runtime) {
+    runtime.setVariable(targetVariable, 42);
+    return null;
+  }
 }

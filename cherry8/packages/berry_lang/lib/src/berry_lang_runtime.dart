@@ -375,7 +375,11 @@ class ProgramLine {
   ProgramLine(this.number, this.statement);
 
   /// {@macro program_line}
-  factory ProgramLine.fromString(String line) {
+  factory ProgramLine.fromString(
+    String line, {
+    required Map<String, ProgramStatement Function(List<String>)>
+    statementParsers,
+  }) {
     final tokens = line.split(' ');
 
     if (tokens.length < 2) {
@@ -391,18 +395,13 @@ class ProgramLine {
       );
     }
 
-    late ProgramStatement statement;
-    if (statementStr == 'LET') {
-      statement = LetStatement.fromTokens(rest);
-    } else if (statementStr == 'GOTO') {
-      statement = GotoStatement.fromTokens(rest);
-    } else if (statementStr == 'IF') {
-      statement = IfStatement.fromTokens(rest);
-    } else {
+    final parser = statementParsers[statementStr];
+    if (parser == null) {
       throw UnexpectedTokenException(
-        'Unknow command: $statementStr at line $line',
+        'Unknown command: $statementStr at line $line',
       );
     }
+    final statement = parser(rest);
 
     return ProgramLine(lineNumber, statement);
   }
@@ -424,7 +423,8 @@ class BerryLangRuntime {
   final Map<String, int> _variables = {};
   final Map<int, ProgramLine> _lines = {};
 
-  var pc = 0;
+  /// Program counter
+  int pc = 0;
 
   /// Returns the line for the given line number
   ProgramLine? getLine(int line) => _lines[line];
@@ -432,11 +432,42 @@ class BerryLangRuntime {
   /// Gets the value of a variable by its name.
   int getVariable(String name) => _variables[name] ?? 0;
 
+  /// Sets the value of a variable by its name.
+  void setVariable(String name, int value) {
+    _variables[name] = value;
+  }
+
+  /// Registers a custom statement parser for a specific command.
+  ///
+  /// Throws an [Exception] if a parser for the given command is already
+  /// registered.
+  void registerStatementParser(
+    String command,
+    ProgramStatement Function(List<String>) parser,
+  ) {
+    if (_statementParsers.containsKey(command)) {
+      throw Exception('Parser for command $command is already registered');
+    }
+    _statementParsers[command] = parser;
+  }
+
+  final Map<String, ProgramStatement Function(List<String>)> _statementParsers =
+      {
+        'LET': LetStatement.fromTokens,
+        'GOTO': GotoStatement.fromTokens,
+        'IF': IfStatement.fromTokens,
+      };
+
   /// Loads a Berry program from the given source code into memory.
   void loadProgram(String source) {
     final stringLines = source.split('\n');
 
-    final programLines = stringLines.map(ProgramLine.fromString);
+    final programLines = stringLines.map(
+      (line) => ProgramLine.fromString(
+        line,
+        statementParsers: _statementParsers,
+      ),
+    );
 
     for (final l in programLines) {
       _lines[l.number] = l;
