@@ -32,6 +32,12 @@ const _validOperators = [
   '-',
   '*',
   '/',
+  '>',
+  '<',
+  '>=',
+  '<=',
+  '=',
+  '<>',
 ];
 
 /// {@template unexpected_token_exception}
@@ -102,6 +108,18 @@ class OperationExpressionMember extends ProgramExpressionMember {
         return leftValue * rightValue;
       case '/':
         return leftValue ~/ rightValue;
+      case '>':
+        return leftValue > rightValue ? 1 : 0;
+      case '<':
+        return leftValue < rightValue ? 1 : 0;
+      case '>=':
+        return leftValue >= rightValue ? 1 : 0;
+      case '<=':
+        return leftValue <= rightValue ? 1 : 0;
+      case '=':
+        return leftValue == rightValue ? 1 : 0;
+      case '<>':
+        return leftValue != rightValue ? 1 : 0;
       default:
         throw UnexpectedTokenException('Invalid operator: $operator');
     }
@@ -215,6 +233,65 @@ class ProgramExpression {
   }
 }
 
+/// {@template if_statement}
+/// A statement that will change the program counter to a specific line
+/// if the expression is true.
+/// {@endtemplate}
+class IfStatement extends ProgramStatement {
+  /// {@macro if_statement}
+  IfStatement({
+    required this.targetLine,
+    required this.expression,
+  });
+
+  /// {@macro if_statement}
+  factory IfStatement.fromTokens(List<String> tokens) {
+    final gotoIndex = tokens.indexOf('GOTO');
+    if (gotoIndex == -1) {
+      throw const UnexpectedTokenException(
+        'IF statement requires a GOTO clause',
+      );
+    }
+
+    final expressionTokens = tokens.sublist(0, gotoIndex);
+    final expression = ProgramExpression.fromTokens(expressionTokens);
+
+    final gotoTokens = tokens.sublist(gotoIndex + 1);
+    if (gotoTokens.isEmpty) {
+      throw const UnexpectedTokenException(
+        'GOTO requires a target line number',
+      );
+    }
+
+    final targetLine = int.tryParse(gotoTokens.first);
+    if (targetLine == null) {
+      throw UnexpectedTokenException(
+        'Invalid target line number: ${gotoTokens.first} at line $tokens',
+      );
+    }
+
+    return IfStatement(
+      targetLine: targetLine,
+      expression: expression,
+    );
+  }
+
+  /// The target line to set the counter to.
+  final int targetLine;
+
+  /// The expression to be evaluated.
+  final ProgramExpression expression;
+
+  @override
+  int? execute(BerryLangRuntime runtime) {
+    final result = expression.evaluate(runtime);
+    if (result > 0) {
+      return targetLine;
+    }
+    return null;
+  }
+}
+
 /// {@template goto_statement}
 /// A Statement that will change the program counter to a specific line.
 /// {@endtemplate}
@@ -223,6 +300,23 @@ class GotoStatement extends ProgramStatement {
   GotoStatement(this.targetLine);
 
   /// {@macro goto_statement}
+  factory GotoStatement.fromTokens(List<String> tokens) {
+    if (tokens.isEmpty) {
+      throw const UnexpectedTokenException(
+        'GOTO requires a target line number',
+      );
+    }
+    final targetLine = int.tryParse(tokens.first);
+    if (targetLine == null) {
+      throw UnexpectedTokenException(
+        'Invalid target line number: ${tokens.first} at line $tokens',
+      );
+    }
+
+    return GotoStatement(targetLine);
+  }
+
+  /// The target line to set the counter to
   final int targetLine;
 
   @override
@@ -301,18 +395,9 @@ class ProgramLine {
     if (statementStr == 'LET') {
       statement = LetStatement.fromTokens(rest);
     } else if (statementStr == 'GOTO') {
-      if (rest.isEmpty) {
-        throw const UnexpectedTokenException(
-          'GOTO requires a target line number',
-        );
-      }
-      final targetLine = int.tryParse(rest.first);
-      if (targetLine == null) {
-        throw UnexpectedTokenException(
-          'Invalid target line number: ${rest.first} at line $line',
-        );
-      }
-      statement = GotoStatement(targetLine);
+      statement = GotoStatement.fromTokens(rest);
+    } else if (statementStr == 'IF') {
+      statement = IfStatement.fromTokens(rest);
     } else {
       throw UnexpectedTokenException(
         'Unknow command: $statementStr at line $line',
