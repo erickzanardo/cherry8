@@ -475,10 +475,21 @@ class BerryLangRuntime {
   }
 
   /// Runs the program
-  Future<void> runProgram() async {
+  void runProgram({
+    int? startLine,
+  }) {
     final allLines = _lines.keys.toList()..sort();
 
     pc = 0;
+
+    if (startLine != null) {
+      final startIndex = allLines.indexOf(startLine);
+      if (startIndex == -1) {
+        throw Exception('Start line $startLine not found in program');
+      }
+      pc = startIndex;
+    }
+
     while (pc < allLines.length) {
       final lineNumber = allLines[pc];
       final line = _lines[lineNumber]!;
