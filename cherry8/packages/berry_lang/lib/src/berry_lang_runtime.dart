@@ -367,6 +367,28 @@ class LetStatement extends ProgramStatement {
   }
 }
 
+/// {@template reset_statement}
+/// A Statement that will reset all variables in the runtime.
+/// {@endtemplate}
+class ResetStatement extends ProgramStatement {
+  /// {@macro reset_statement}
+  ResetStatement();
+
+  /// {@macro reset_statement}
+  factory ResetStatement.fromTokens(List<String> tokens) {
+    if (tokens.isNotEmpty) {
+      throw const UnexpectedTokenException('RESET does not take any arguments');
+    }
+    return ResetStatement();
+  }
+
+  @override
+  int? execute(BerryLangRuntime runtime) {
+    runtime._variables.clear();
+    return null;
+  }
+}
+
 /// {@template program_line}
 /// A line in a Berry program consisting of a line number and a statement.
 /// {@endtemplate}
@@ -456,6 +478,7 @@ class BerryLangRuntime {
         'LET': LetStatement.fromTokens,
         'GOTO': GotoStatement.fromTokens,
         'IF': IfStatement.fromTokens,
+        'RESET': ResetStatement.fromTokens,
       };
 
   /// Loads a Berry program from the given source code into memory.

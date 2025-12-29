@@ -99,6 +99,95 @@ void main() {
 
           expect(berryRuntime.getVariable('A'), equals(1));
         });
+
+        group('reset statements', () {
+          test('is correctly parsed', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 RESET''');
+
+            final line = berryRuntime.getLine(10);
+            expect(line, isNotNull);
+            expect(line!.number, equals(10));
+
+            final statement = line.statement;
+            expect(
+              statement,
+              isA<ResetStatement>(),
+            );
+          });
+          test('resets all variables', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = 10
+20 LET B = 20
+30 RESET''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(0));
+            expect(berryRuntime.getVariable('B'), equals(0));
+          });
+
+          test('sets a value from a variable', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = 10
+20 LET B = A''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(10));
+            expect(berryRuntime.getVariable('B'), equals(10));
+          });
+
+          test('sets a value from an add operation', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = 10 + 12''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(22));
+          });
+
+          test('sets a value from a complex expression', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = 10 + 2 + 3 + 5 + 1''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(21));
+          });
+
+          test('sets a value from a subtract operation', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = 20 - 5''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(15));
+          });
+
+          test('sets a value from mixed operations', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = 50 - 20 + 5 + 10 - 2''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(43));
+          });
+
+          test('sets a value from an operation between variables', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = 30
+20 LET B = 10
+30 LET C = A - B + 5''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(30));
+            expect(berryRuntime.getVariable('B'), equals(10));
+            expect(berryRuntime.getVariable('C'), equals(25));
+          });
+
+          test('variables are 0 bt default', () {
+            final berryRuntime = BerryLangRuntime()
+              ..loadProgram('''10 LET A = B + 1''')
+              ..runProgram();
+
+            expect(berryRuntime.getVariable('A'), equals(1));
+          });
+        });
       });
 
       group('GOTO statements', () {
