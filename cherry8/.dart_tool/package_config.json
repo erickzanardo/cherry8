@@ -306,6 +306,12 @@
       "rootUri": "../packages/berry_lang",
       "packageUri": "lib/",
       "languageVersion": "3.9"
+    },
+    {
+      "name": "cherry_8_runtime",
+      "rootUri": "../packages/cherry_8_runtime",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
     }
   ],
   "generator": "pub",
