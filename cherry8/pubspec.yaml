@@ -4,3 +4,4 @@ environment:
   sdk: ^3.10.0
 workspace:
   - packages/berry_lang
+  - packages/cherry_8_runtime
