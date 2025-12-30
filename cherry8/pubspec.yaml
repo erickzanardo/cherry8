@@ -1,7 +1,13 @@
 name: _
 publish_to: none
+
+
 environment:
   sdk: ^3.10.0
+  flutter: ^3.38.5
+
 workspace:
   - packages/berry_lang
   - packages/cherry_8_runtime
+  - packages/cherry_8_flutter_runtime
+  - packages/cherry_8_flutter_runtime/example

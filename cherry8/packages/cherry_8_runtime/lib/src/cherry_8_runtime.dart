@@ -12,10 +12,10 @@ class _SetPixelStatement extends ProgramStatement {
         'Invalid number of tokens for SetPixelStatement',
       );
     }
-    final x = int.tryParse(tokens[0]);
-    final y = int.tryParse(tokens[1]);
+    final x = ProgramExpression.fromTokens(tokens.sublist(0, 1));
+    final y = ProgramExpression.fromTokens(tokens.sublist(1, 2));
     final state = int.tryParse(tokens[2]);
-    if (x == null || y == null || state == null) {
+    if (state == null) {
       throw const UnexpectedTokenException(
         'Invalid parameters for SetPixelStatement',
       );
@@ -23,15 +23,15 @@ class _SetPixelStatement extends ProgramStatement {
     return _SetPixelStatement(x, y, state, runtime);
   }
 
-  final int x;
-  final int y;
+  final ProgramExpression x;
+  final ProgramExpression y;
   final int state;
 
   final Cherry8Runtime _runtime;
 
   @override
   int? execute(BerryLangRuntime runtime) {
-    _runtime._pixels[(x, y)] = state;
+    _runtime._pixels[(x.evaluate(runtime), y.evaluate(runtime))] = state;
     return null;
   }
 }
@@ -77,6 +77,14 @@ class Cherry8Runtime {
 
   late final int _iterationRoutineLine;
 
+  final List<void Function()> _tickListeners = [];
+
+  /// The target frames per second for the runtime.
+  static const fpsTarget = 40;
+
+  /// The resolution of the Cherry8 console.
+  static const resolution = (104, 80);
+
   /// The underlying BerryLang runtime.
   BerryLangRuntime get berryRuntime => _berryRuntime;
 
@@ -95,10 +103,50 @@ class Cherry8Runtime {
       ..runProgram();
   }
 
+  /// Adds a tick listener to the runtime.
+  void addTickListener(void Function() listener) {
+    _tickListeners.add(listener);
+  }
+
+  /// Removes a tick listener from the runtime.
+  void removeTickListener(void Function() listener) {
+    _tickListeners.remove(listener);
+  }
+
   /// Returns the state of the pixel at the given coordinates.
   int pixelState(int x, int y) => _pixels[(x, y)] ?? 0;
 
   final Map<(int, int), int> _pixels = {};
+
+  bool _running = false;
+
+  /// Stops the main loop of the runtime.
+  void stopLoop() {
+    _running = false;
+  }
+
+  /// Starts the main loop of the runtime.
+  Future<void> startLoop() async {
+    if (_running) return;
+    _running = true;
+    const frameDuration = Duration(milliseconds: 1000 ~/ fpsTarget);
+    await Future.doWhile(() async {
+      final frameStart = DateTime.now();
+      runIteration();
+      for (final listener in _tickListeners) {
+        listener();
+      }
+      final frameEnd = DateTime.now();
+      final elapsed = frameEnd.difference(frameStart);
+      final delay = frameDuration - elapsed;
+      if (delay.isNegative) {
+        return _running; // Immediately start the next iteration
+      } else {
+        await Future<void>.delayed(delay);
+        return _running; // Continue the loop
+      }
+    });
+  }
 
   /// Runs a single iteration of the runtime.
   void runIteration() {
