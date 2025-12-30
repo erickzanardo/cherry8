@@ -11,6 +11,8 @@ environment:
 
 dependencies:
   berry_lang: ^0.1.0+1
+  flutter:
+    sdk: flutter
 
 dev_dependencies:
   mocktail: ^1.0.4
