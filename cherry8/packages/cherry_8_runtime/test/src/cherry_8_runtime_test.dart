@@ -20,5 +20,16 @@ void main() {
 
       expect(runtime.berryRuntime.getVariable('A'), 2);
     });
+
+    group('SETP', () {
+      test('sets pixel correctly', () async {
+        final runtime = Cherry8Runtime();
+        const cartridgeSource = '''10 SETP 5 10 1
+20 SETP 15 20 1''';
+        await runtime.loadCartridge(cartridgeSource);
+        expect(runtime.pixelState(5, 10), 1);
+        expect(runtime.pixelState(15, 20), 1);
+      });
+    });
   });
 }
