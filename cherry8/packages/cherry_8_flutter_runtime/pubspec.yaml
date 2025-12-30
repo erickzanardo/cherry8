@@ -1,0 +1,21 @@
+name: cherry_8_flutter_runtime
+description: A Cherry8 runtime for flutter
+version: 0.1.0+1
+publish_to: none
+
+resolution: workspace
+
+environment:
+  sdk: ^3.9.0
+  flutter: ^3.35.0
+
+dependencies:
+  cherry_8_runtime: ^0.1.0+1
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0

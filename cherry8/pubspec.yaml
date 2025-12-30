@@ -5,3 +5,5 @@ environment:
 workspace:
   - packages/berry_lang
   - packages/cherry_8_runtime
+  - packages/cherry_8_flutter_runtime
+  - packages/cherry_8_flutter_runtime/example
