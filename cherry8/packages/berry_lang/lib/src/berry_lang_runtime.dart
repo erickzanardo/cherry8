@@ -389,6 +389,27 @@ class ResetStatement extends ProgramStatement {
   }
 }
 
+/// {@template end_statement}
+/// A Statement that will end the program execution.
+/// {@endtemplate}
+class EndStatement extends ProgramStatement {
+  /// {@macro end_statement}
+  EndStatement();
+
+  /// {@macro end_statement}
+  factory EndStatement.fromTokens(List<String> tokens) {
+    if (tokens.isNotEmpty) {
+      throw const UnexpectedTokenException('END does not take any arguments');
+    }
+    return EndStatement();
+  }
+
+  @override
+  int? execute(BerryLangRuntime runtime) {
+    return -1;
+  }
+}
+
 /// {@template program_line}
 /// A line in a Berry program consisting of a line number and a statement.
 /// {@endtemplate}
@@ -479,6 +500,7 @@ class BerryLangRuntime {
         'GOTO': GotoStatement.fromTokens,
         'IF': IfStatement.fromTokens,
         'RESET': ResetStatement.fromTokens,
+        'END': EndStatement.fromTokens,
       };
 
   /// Loads a Berry program from the given source code into memory.
@@ -519,6 +541,10 @@ class BerryLangRuntime {
 
       final newPc = line.statement.execute(this);
       if (newPc != null) {
+        if (newPc == -1) {
+          // End program
+          break;
+        }
         pc = allLines.indexOf(newPc);
       } else {
         pc++;
